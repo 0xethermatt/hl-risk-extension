@@ -7,7 +7,6 @@ import {
   EMPTY_TRADE_INPUTS,
   type Direction,
   type MarginMode,
-  type TradeCalculation,
   type TradeInputs,
 } from "../lib/types";
 import { getAllWarnings } from "../lib/validation";
@@ -67,50 +66,11 @@ function inputsFromForm(form: FormState): TradeInputs {
   };
 }
 
-function buildCopyText(inputs: TradeInputs, calc: TradeCalculation): string {
-  const positionSizeLine = `${formatAssetAmount(calc.positionSize, inputs.asset)}${
-    inputs.asset ? ` ${inputs.asset}` : ""
-  }`;
-
-  return [
-    "Hyperliquid Trade Settings",
-    "",
-    `Asset: ${inputs.asset || "—"}`,
-    `Direction: ${inputs.direction.toUpperCase()}`,
-    `Margin Mode: ${inputs.marginMode.toUpperCase()}`,
-    `Leverage: ${inputs.leverage}x`,
-    `Account Balance: ${formatUSDC(inputs.accountBalance)}`,
-    `Risk %: ${formatPercent(inputs.riskPercent)}`,
-    `Risk Amount: ${formatUSDC(calc.riskAmount)}`,
-    "",
-    `Entry: ${formatUSDC(inputs.entryPrice)}`,
-    `Stop Loss: ${formatUSDC(inputs.stopLossPrice)}`,
-    `Take Profit: ${formatUSDC(inputs.takeProfitPrice)}`,
-    "",
-    `Position Size: ${positionSizeLine}`,
-    `Position Notional: ${formatUSDC(calc.positionNotional)}`,
-    `Required Margin: ${formatUSDC(calc.requiredMargin)}`,
-    `Loss at Stop: ${formatUSDC(calc.lossAtStop)}`,
-    `Profit at TP: ${formatUSDC(calc.profitAtTakeProfit)}`,
-    `Risk/Reward: ${formatRatio(calc.riskRewardRatio)}`,
-    `Stop Distance: ${formatPercent(calc.stopDistancePercent)}`,
-    `TP Distance: ${formatPercent(calc.takeProfitDistancePercent)}`,
-    `Margin Usage: ${formatPercent(calc.marginUsagePercent)}`,
-    `Est. Liquidation Distance: ${formatPercent(calc.approxLiquidationDistancePercent)}`,
-    "",
-    "Notes:",
-    "Position size is calculated from risk amount and stop distance.",
-    "Leverage affects required margin, not planned stop-loss risk.",
-    "With proper sizing, the stop loss should trigger before liquidation.",
-    "This tool does not place trades.",
-  ].join("\n");
-}
 
 export function Popup() {
   const [form, setForm] = useState<FormState>(formFromInputs(EMPTY_TRADE_INPUTS));
   const [hydrated, setHydrated] = useState(false);
   const [overlayEnabled, setOverlayEnabled] = useState(false);
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
 
   useEffect(() => {
     let cancelled = false;
@@ -149,20 +109,8 @@ export function Popup() {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function handleCopySettings() {
-    const text = buildCopyText(inputs, calc);
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopyStatus("copied");
-    } catch {
-      setCopyStatus("failed");
-    }
-    setTimeout(() => setCopyStatus("idle"), 1600);
-  }
-
   function handleReset() {
     setForm(formFromInputs(EMPTY_TRADE_INPUTS));
-    setCopyStatus("idle");
   }
 
   async function handleToggleOverlay() {
@@ -369,18 +317,7 @@ export function Popup() {
         </section>
 
         {/* Actions */}
-        <section className="space-y-1.5">
-          <button
-            type="button"
-            onClick={() => void handleCopySettings()}
-            className="w-full rounded bg-accent/20 py-1.5 text-xs font-semibold text-accent hover:bg-accent/30"
-          >
-            {copyStatus === "copied"
-              ? "Copied!"
-              : copyStatus === "failed"
-                ? "Copy failed — select text manually"
-                : "Copy Hyperliquid Settings"}
-          </button>
+        <section>
           <button
             type="button"
             onClick={handleReset}
