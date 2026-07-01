@@ -11,6 +11,7 @@ const baseLong: TradeInputs = {
   stopLossPrice: 90,
   takeProfitPrice: 120,
   leverage: 10,
+  marginMode: "isolated",
 };
 
 const baseShort: TradeInputs = {
@@ -22,6 +23,7 @@ const baseShort: TradeInputs = {
   stopLossPrice: 110,
   takeProfitPrice: 80,
   leverage: 10,
+  marginMode: "isolated",
 };
 
 describe("calculateTrade", () => {
@@ -121,14 +123,39 @@ describe("calculateTrade", () => {
     expect(Number.isFinite(calc.marginUsagePercent)).toBe(true);
   });
 
-  it("estimates liquidation distance as roughly 100/leverage percent", () => {
+  it("estimates isolated liquidation distance as roughly 100/leverage percent", () => {
     expect(calculateTrade({ ...baseLong, leverage: 10 }).approxLiquidationDistancePercent).toBeCloseTo(10);
     expect(calculateTrade({ ...baseLong, leverage: 20 }).approxLiquidationDistancePercent).toBeCloseTo(5);
     expect(calculateTrade({ ...baseLong, leverage: 50 }).approxLiquidationDistancePercent).toBeCloseTo(2);
   });
 
-  it("handles zero leverage in the liquidation distance estimate without NaN or Infinity", () => {
+  it("handles zero leverage in the isolated liquidation distance estimate without NaN or Infinity", () => {
     const calc = calculateTrade({ ...baseLong, leverage: 0 });
+    expect(calc.approxLiquidationDistancePercent).toBe(0);
+    expect(Number.isFinite(calc.approxLiquidationDistancePercent)).toBe(true);
+  });
+
+  it("estimates cross liquidation distance from account balance vs. position notional", () => {
+    // riskAmount=100, stopDistance=10 -> positionSize=10, notional=1000
+    // cross: accountBalance(10000)/notional(1000)*100 = 1000%
+    const calc = calculateTrade({ ...baseLong, marginMode: "cross" });
+    expect(calc.approxLiquidationDistancePercent).toBeCloseTo(1000);
+  });
+
+  it("gives cross margin a wider liquidation buffer than isolated at the same leverage", () => {
+    const isolated = calculateTrade({ ...baseLong, marginMode: "isolated", leverage: 10 });
+    const cross = calculateTrade({ ...baseLong, marginMode: "cross", leverage: 10 });
+    expect(cross.approxLiquidationDistancePercent).toBeGreaterThan(isolated.approxLiquidationDistancePercent);
+  });
+
+  it("does not let margin mode affect required margin (initial margin is mode-independent)", () => {
+    const isolated = calculateTrade({ ...baseLong, marginMode: "isolated" });
+    const cross = calculateTrade({ ...baseLong, marginMode: "cross" });
+    expect(cross.requiredMargin).toBeCloseTo(isolated.requiredMargin);
+  });
+
+  it("handles zero position notional in the cross liquidation distance estimate without NaN or Infinity", () => {
+    const calc = calculateTrade({ ...baseLong, marginMode: "cross", stopLossPrice: baseLong.entryPrice });
     expect(calc.approxLiquidationDistancePercent).toBe(0);
     expect(Number.isFinite(calc.approxLiquidationDistancePercent)).toBe(true);
   });

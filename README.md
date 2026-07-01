@@ -59,6 +59,7 @@ src/
   test/
     calc.test.ts
     validation.test.ts
+    domExtractors.test.ts
 ```
 
 ## Local development
@@ -113,7 +114,10 @@ and the service worker don't hot-reload the same way the popup does.
 3. Fill in (or auto-fill from detected values) direction, asset, account
    balance, risk %, entry/stop/take-profit, and leverage. Watch the
    **Results** and **Warnings** sections update live.
-4. Try the quick risk % and leverage buttons, and toggle Long/Short.
+4. Try the quick risk % and leverage buttons, toggle Long/Short, and toggle
+   Cross/Isolated — match this to whatever margin mode you actually have
+   selected on Hyperliquid, since the "Est. Liquidation Distance" estimate
+   and the liquidation warnings depend on it.
 5. Optionally paste a wallet address into the **Wallet (read-only)** card
    and click "Fetch account data" to pull account value/withdrawable/margin
    from Hyperliquid's public info endpoint, then "Use API balance" to feed
@@ -161,14 +165,22 @@ npm run preview      # Preview the production build
   position requires.
 - **The core idea of stop-loss risk management is that you get stopped out,
   not liquidated** — but that only holds if your stop is actually reachable
-  before liquidation. The tool estimates this with a rough, isolated-margin
-  approximation (`~100/leverage`% move to liquidation) and warns
+  before liquidation. The tool estimates this per margin mode and warns
   (`stop-near-liquidation`) or errors (`stop-beyond-liquidation`) when your
-  stop distance gets close to or exceeds that estimate. This is **not** an
-  exact liquidation price calculation — Hyperliquid's real liquidation price
-  also depends on margin mode, maintenance margin tiers, funding, and other
-  open positions, none of which this tool models. Treat "Est. Liquidation
-  Distance" as a rough outer bound, not a guarantee, and leave real buffer
-  between your stop and it.
+  stop distance gets close to or exceeds that estimate:
+  - **Isolated** — only this position's own allocated margin backs it:
+    `~100/leverage`% move to liquidation.
+  - **Cross** — the whole account balance backs it, which is normally a much
+    wider buffer, but puts the entire account at risk instead of just this
+    position: `~(accountBalance / positionNotional) × 100`% move.
+
+  Neither is an exact liquidation price calculation — Hyperliquid's real
+  liquidation price also depends on maintenance margin tiers, funding, and
+  (in cross mode) any other open cross positions sharing that same account
+  balance, none of which this tool models. Treat "Est. Liquidation Distance"
+  as a rough outer bound, not a guarantee, and leave real buffer between
+  your stop and it. Make sure the Cross/Isolated toggle in the popup
+  actually matches what you have selected on Hyperliquid — this tool has no
+  way to detect your margin mode automatically.
 - **Always verify every value in Hyperliquid's own UI before placing a
   trade.** This tool is an aid, not a source of truth.

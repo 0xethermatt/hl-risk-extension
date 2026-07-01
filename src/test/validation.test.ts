@@ -17,6 +17,7 @@ const baseLong: TradeInputs = {
   stopLossPrice: 90,
   takeProfitPrice: 120,
   leverage: 10,
+  marginMode: "isolated",
 };
 
 const baseShort: TradeInputs = {
@@ -165,6 +166,58 @@ describe("getThresholdWarnings", () => {
     const inputs: TradeInputs = { ...baseLong, entryPrice: 100, stopLossPrice: 95, leverage: 10 };
     const warnings = getThresholdWarnings(inputs, calculateTrade(inputs));
     expect(hasWarning(warnings, "stop-near-liquidation")).toBe(false);
+    expect(hasWarning(warnings, "stop-beyond-liquidation")).toBe(false);
+  });
+
+  it("does not raise a cross-margin liquidation warning when position notional is small relative to balance", () => {
+    // The same stop/leverage combo that triggers stop-beyond-liquidation in
+    // isolated mode should not trigger it in cross mode, since the whole
+    // account (not just this position's margin) backs the position.
+    const inputs: TradeInputs = {
+      ...baseLong,
+      entryPrice: 100,
+      stopLossPrice: 85,
+      leverage: 10,
+      marginMode: "cross",
+    };
+    const warnings = getThresholdWarnings(inputs, calculateTrade(inputs));
+    expect(hasWarning(warnings, "stop-beyond-liquidation")).toBe(false);
+    expect(hasWarning(warnings, "stop-near-liquidation")).toBe(false);
+  });
+
+  it("raises stop-beyond-liquidation in cross mode when the loss at stop would consume the whole account", () => {
+    // riskPercent=100 means riskAmount == accountBalance, so the loss at
+    // stop exactly consumes the account — the point at which cross-margin
+    // liquidation would occur too.
+    const inputs: TradeInputs = {
+      ...baseLong,
+      entryPrice: 100,
+      stopLossPrice: 50,
+      riskPercent: 100,
+      marginMode: "cross",
+    };
+    const calc = calculateTrade(inputs);
+    expect(calc.stopDistancePercent / calc.approxLiquidationDistancePercent).toBeCloseTo(1);
+
+    const warnings = getThresholdWarnings(inputs, calc);
+    expect(hasWarning(warnings, "stop-beyond-liquidation")).toBe(true);
+  });
+
+  it("raises stop-near-liquidation in cross mode when the buffer is thin but not exhausted", () => {
+    const inputs: TradeInputs = {
+      ...baseLong,
+      entryPrice: 100,
+      stopLossPrice: 50,
+      riskPercent: 85,
+      marginMode: "cross",
+    };
+    const calc = calculateTrade(inputs);
+    const ratio = calc.stopDistancePercent / calc.approxLiquidationDistancePercent;
+    expect(ratio).toBeGreaterThanOrEqual(0.8);
+    expect(ratio).toBeLessThan(1);
+
+    const warnings = getThresholdWarnings(inputs, calc);
+    expect(hasWarning(warnings, "stop-near-liquidation")).toBe(true);
     expect(hasWarning(warnings, "stop-beyond-liquidation")).toBe(false);
   });
 });

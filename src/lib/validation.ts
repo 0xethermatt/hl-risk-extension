@@ -132,18 +132,22 @@ export function getThresholdWarnings(
       calc.approxLiquidationDistancePercent > 0
     ) {
       const liquidationBufferRatio = calc.stopDistancePercent / calc.approxLiquidationDistancePercent;
+      const modeContext =
+        inputs.marginMode === "cross"
+          ? `in cross margin, this position's loss would consume your whole account balance`
+          : `at ${inputs.leverage}x isolated leverage, the position's own allocated margin`;
 
       if (liquidationBufferRatio >= 1) {
         warnings.push({
           id: "stop-beyond-liquidation",
           level: "error",
-          message: `At ${inputs.leverage}x leverage, the position could be liquidated (~${calc.approxLiquidationDistancePercent.toFixed(2)}% move) before your ${calc.stopDistancePercent.toFixed(2)}% stop loss is ever hit. Proper risk management only works if the stop triggers first — reduce leverage or tighten the stop.`,
+          message: `Estimated liquidation happens first: ${modeContext} runs out at a ~${calc.approxLiquidationDistancePercent.toFixed(2)}% move, before your ${calc.stopDistancePercent.toFixed(2)}% stop loss is ever hit. Proper risk management only works if the stop triggers first — reduce leverage, switch margin mode, or tighten the stop.`,
         });
       } else if (liquidationBufferRatio >= 0.8) {
         warnings.push({
           id: "stop-near-liquidation",
           level: "warning",
-          message: `Stop distance (${calc.stopDistancePercent.toFixed(2)}%) is within 20% of the approximate liquidation distance (~${calc.approxLiquidationDistancePercent.toFixed(2)}% at ${inputs.leverage}x) — thin buffer before liquidation risk overtakes stop-loss risk.`,
+          message: `Stop distance (${calc.stopDistancePercent.toFixed(2)}%) is within 20% of the approximate liquidation distance (~${calc.approxLiquidationDistancePercent.toFixed(2)}%, ${modeContext}) — thin buffer before liquidation risk overtakes stop-loss risk.`,
         });
       }
     }

@@ -39,13 +39,24 @@ export function calculateTrade(inputs: TradeInputs): TradeCalculation {
   const takeProfitDistancePercent = safeDivide(takeProfitDistance, entryPrice) * 100;
   const marginUsagePercent = safeDivide(requiredMargin, accountBalance) * 100;
 
-  // Rough, isolated-margin approximation of how far price can move against
-  // the position before margin is exhausted: loss == margin when
-  // distance/entry == 1/leverage, i.e. distancePercent == 100/leverage.
-  // Real liquidation happens a bit *before* this (maintenance margin, cross
-  // margin, funding are not modeled) — this is a directional estimate only,
-  // not an exact liquidation price.
-  const approxLiquidationDistancePercent = safeDivide(100, leverage);
+  // Rough approximation of how far price can move against the position
+  // before its backing collateral is exhausted. This is a directional
+  // estimate only, not an exact liquidation price — maintenance margin,
+  // funding, and (for cross) other open positions are not modeled.
+  //
+  // Isolated: only this position's own allocated margin backs it, so loss
+  // reaches that margin when distance/entry == 1/leverage, i.e.
+  // distancePercent == 100/leverage.
+  //
+  // Cross: the whole account balance backs it, so loss reaches the account
+  // balance when distance/entry == accountBalance/positionNotional, i.e.
+  // distancePercent == (accountBalance / positionNotional) * 100. This is
+  // usually a much wider buffer than isolated mode's estimate — at the cost
+  // of putting the whole account on the line rather than just this position.
+  const approxLiquidationDistancePercent =
+    inputs.marginMode === "cross"
+      ? safeDivide(accountBalance, positionNotional) * 100
+      : safeDivide(100, leverage);
 
   return {
     riskAmount,

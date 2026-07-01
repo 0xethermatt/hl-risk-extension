@@ -14,6 +14,7 @@ import {
   type DetectedContext,
   type Direction,
   type HyperliquidAccountState,
+  type MarginMode,
   type TradeCalculation,
   type TradeInputs,
 } from "../lib/types";
@@ -36,6 +37,7 @@ interface FormState {
   stopLossPrice: string;
   takeProfitPrice: string;
   leverage: string;
+  marginMode: MarginMode;
 }
 
 function numberToField(value: number): string {
@@ -52,6 +54,7 @@ function formFromInputs(inputs: TradeInputs): FormState {
     stopLossPrice: numberToField(inputs.stopLossPrice),
     takeProfitPrice: numberToField(inputs.takeProfitPrice),
     leverage: numberToField(inputs.leverage),
+    marginMode: inputs.marginMode,
   };
 }
 
@@ -70,6 +73,7 @@ function inputsFromForm(form: FormState): TradeInputs {
     stopLossPrice: parseFieldNumber(form.stopLossPrice),
     takeProfitPrice: parseFieldNumber(form.takeProfitPrice),
     leverage: parseFieldNumber(form.leverage),
+    marginMode: form.marginMode,
   };
 }
 
@@ -100,6 +104,7 @@ function buildCopyText(inputs: TradeInputs, calc: TradeCalculation): string {
     "",
     `Asset: ${inputs.asset || "—"}`,
     `Direction: ${inputs.direction.toUpperCase()}`,
+    `Margin Mode: ${inputs.marginMode.toUpperCase()}`,
     `Leverage: ${inputs.leverage}x`,
     `Account Balance: ${formatUSDC(inputs.accountBalance)}`,
     `Risk %: ${formatPercent(inputs.riskPercent)}`,
@@ -464,6 +469,29 @@ export function Popup() {
               }`}
             >
               Short
+            </button>
+          </div>
+
+          <div className="mb-2 grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => updateField("marginMode", "cross")}
+              title="Whole account balance backs the position — wider liquidation buffer, whole account at risk."
+              className={`rounded py-1.5 text-xs font-semibold ${
+                form.marginMode === "cross" ? "bg-accent/20 text-accent" : "bg-panel text-slate-500"
+              }`}
+            >
+              Cross
+            </button>
+            <button
+              type="button"
+              onClick={() => updateField("marginMode", "isolated")}
+              title="Only this position's own margin backs it — losses capped to that margin, tighter liquidation buffer."
+              className={`rounded py-1.5 text-xs font-semibold ${
+                form.marginMode === "isolated" ? "bg-accent/20 text-accent" : "bg-panel text-slate-500"
+              }`}
+            >
+              Isolated
             </button>
           </div>
 

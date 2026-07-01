@@ -1,4 +1,5 @@
 export type Direction = "long" | "short";
+export type MarginMode = "cross" | "isolated";
 
 export interface TradeInputs {
   direction: Direction;
@@ -9,6 +10,7 @@ export interface TradeInputs {
   stopLossPrice: number;
   takeProfitPrice: number;
   leverage: number;
+  marginMode: MarginMode;
 }
 
 export const EMPTY_TRADE_INPUTS: TradeInputs = {
@@ -20,6 +22,7 @@ export const EMPTY_TRADE_INPUTS: TradeInputs = {
   stopLossPrice: 0,
   takeProfitPrice: 0,
   leverage: 1,
+  marginMode: "cross",
 };
 
 export interface TradeCalculation {
