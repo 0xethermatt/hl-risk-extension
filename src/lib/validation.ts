@@ -201,6 +201,5 @@ export function getAllWarnings(inputs: TradeInputs, calc: TradeCalculation): Ris
   return [
     ...validateDirection(inputs),
     ...getThresholdWarnings(inputs, calc),
-    ...getMissingInputWarnings(inputs),
   ];
 }
