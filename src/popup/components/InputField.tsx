@@ -24,8 +24,10 @@ export function InputField({
   const inputId = id ?? `field-${label.toLowerCase().replace(/\s+/g, "-")}`;
 
   return (
-    <label htmlFor={inputId} className="block text-xs">
-      <span className="mb-1 block font-medium text-slate-400">{label}</span>
+    <label htmlFor={inputId} className="block">
+      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-widest text-muted">
+        {label}
+      </span>
       <div className="relative">
         <input
           id={inputId}
@@ -35,10 +37,10 @@ export function InputField({
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className={`w-full rounded border border-border bg-surface px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent${inputClassName ? ` ${inputClassName}` : ""}`}
+          className={`w-full rounded-lg border border-border bg-surface2 px-3 py-2 text-sm font-medium text-slate-100 placeholder:text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/50${inputClassName ? ` ${inputClassName}` : ""}`}
         />
         {suffix ? (
-          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500">
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted">
             {suffix}
           </span>
         ) : null}

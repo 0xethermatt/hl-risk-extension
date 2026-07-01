@@ -66,7 +66,6 @@ function inputsFromForm(form: FormState): TradeInputs {
   };
 }
 
-
 export function Popup() {
   const [form, setForm] = useState<FormState>(formFromInputs(EMPTY_TRADE_INPUTS));
   const [hydrated, setHydrated] = useState(false);
@@ -81,9 +80,7 @@ export function Popup() {
       setForm(formFromInputs(stored.lastInputs));
       setHydrated(true);
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -91,18 +88,14 @@ export function Popup() {
     const handle = setTimeout(() => {
       const numericInputs = inputsFromForm(form);
       void setStoredValue("lastInputs", numericInputs);
-      if (numericInputs.riskPercent > 0) {
-        void setStoredValue("riskPercentDefault", numericInputs.riskPercent);
-      }
-      if (numericInputs.leverage > 0) {
-        void setStoredValue("leverageDefault", numericInputs.leverage);
-      }
+      if (numericInputs.riskPercent > 0) void setStoredValue("riskPercentDefault", numericInputs.riskPercent);
+      if (numericInputs.leverage > 0) void setStoredValue("leverageDefault", numericInputs.leverage);
     }, 400);
     return () => clearTimeout(handle);
   }, [form, hydrated]);
 
   const inputs = useMemo(() => inputsFromForm(form), [form]);
-  const calc = useMemo(() => calculateTrade(inputs), [inputs]);
+  const calc   = useMemo(() => calculateTrade(inputs), [inputs]);
   const warnings = useMemo(() => getAllWarnings(inputs, calc), [inputs, calc]);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -121,64 +114,77 @@ export function Popup() {
   }
 
   const rrTone = calc.riskRewardRatio <= 0 ? "default" : calc.riskRewardRatio >= 1.5 ? "ok" : "warn";
-  const liquidationBufferRatio =
-    calc.approxLiquidationDistancePercent > 0
-      ? calc.stopDistancePercent / calc.approxLiquidationDistancePercent
-      : 0;
-  const liquidationTone =
-    liquidationBufferRatio >= 1 ? "danger" : liquidationBufferRatio >= 0.8 ? "warn" : "default";
+  const liqRatio = calc.approxLiquidationDistancePercent > 0
+    ? calc.stopDistancePercent / calc.approxLiquidationDistancePercent
+    : 0;
+  const liqTone = liqRatio >= 1 ? "danger" : liqRatio >= 0.8 ? "warn" : "default";
 
   return (
-    <div className="min-h-full bg-panel px-3 py-3 text-slate-100">
-      {/* Header */}
-      <header className="mb-3 flex items-center justify-between">
-        <h1 className="text-sm font-bold tracking-tight text-accent">HL Risk Tool</h1>
+    <div className="min-h-full bg-panel px-4 py-4 text-slate-100">
+
+      {/* ── Header ── */}
+      <header className="mb-4 flex items-center justify-between">
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+            Hyperliquid
+          </div>
+          <div className="text-base font-bold leading-tight tracking-tight text-slate-100">
+            Risk Pilot
+          </div>
+        </div>
         <button
           type="button"
           onClick={() => void handleToggleOverlay()}
-          className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
-            overlayEnabled ? "bg-accent/20 text-accent" : "bg-slate-700/40 text-slate-400"
+          className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+            overlayEnabled
+              ? "border-accent/40 bg-accent/10 text-accent"
+              : "border-border bg-surface text-muted hover:border-accent/30 hover:text-accent/60"
           }`}
         >
-          Overlay {overlayEnabled ? "On" : "Off"}
+          {overlayEnabled ? "● Overlay On" : "○ Overlay Off"}
         </button>
       </header>
 
       <div className="space-y-3">
-        {/* Trade setup */}
-        <section className="rounded-lg border border-border bg-surface p-3">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Trade Setup
-          </h2>
 
-          <div className="mb-2 grid grid-cols-2 gap-1.5">
+        {/* ── Direction + Margin Mode ── */}
+        <div className="space-y-2">
+          {/* Direction */}
+          <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-border">
             <button
               type="button"
               onClick={() => updateField("direction", "long")}
-              className={`rounded py-1.5 text-xs font-semibold ${
-                form.direction === "long" ? "bg-ok/20 text-ok" : "bg-panel text-slate-500"
+              className={`py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+                form.direction === "long"
+                  ? "bg-accent/15 text-accent"
+                  : "bg-surface text-muted hover:text-slate-300"
               }`}
             >
-              Long
+              ▲ Long
             </button>
             <button
               type="button"
               onClick={() => updateField("direction", "short")}
-              className={`rounded py-1.5 text-xs font-semibold ${
-                form.direction === "short" ? "bg-danger/20 text-danger" : "bg-panel text-slate-500"
+              className={`border-l border-border py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+                form.direction === "short"
+                  ? "bg-danger/15 text-danger"
+                  : "bg-surface text-muted hover:text-slate-300"
               }`}
             >
-              Short
+              ▼ Short
             </button>
           </div>
 
-          <div className="mb-2 grid grid-cols-2 gap-1.5">
+          {/* Margin Mode */}
+          <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-border">
             <button
               type="button"
               onClick={() => updateField("marginMode", "cross")}
-              title="Whole account balance backs the position — wider liquidation buffer, whole account at risk."
-              className={`rounded py-1.5 text-xs font-semibold ${
-                form.marginMode === "cross" ? "bg-accent/20 text-accent" : "bg-panel text-slate-500"
+              title="Whole account balance backs the position"
+              className={`py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                form.marginMode === "cross"
+                  ? "bg-accent/10 text-accent"
+                  : "bg-surface text-muted hover:text-slate-300"
               }`}
             >
               Cross
@@ -186,16 +192,23 @@ export function Popup() {
             <button
               type="button"
               onClick={() => updateField("marginMode", "isolated")}
-              title="Only this position's own margin backs it — losses capped to that margin, tighter liquidation buffer."
-              className={`rounded py-1.5 text-xs font-semibold ${
-                form.marginMode === "isolated" ? "bg-accent/20 text-accent" : "bg-panel text-slate-500"
+              title="Only this position's margin backs it"
+              className={`border-l border-border py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                form.marginMode === "isolated"
+                  ? "bg-accent/10 text-accent"
+                  : "bg-surface text-muted hover:text-slate-300"
               }`}
             >
               Isolated
             </button>
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-2">
+        {/* ── Inputs ── */}
+        <div className="rounded-xl border border-border bg-surface p-4 space-y-4">
+
+          {/* Asset + Balance */}
+          <div className="grid grid-cols-2 gap-3">
             <InputField
               label="Asset"
               type="text"
@@ -204,121 +217,111 @@ export function Popup() {
               placeholder="BTC"
             />
             <InputField
-              label="Account Balance"
+              label="Balance"
               value={form.accountBalance}
               onChange={(v) => updateField("accountBalance", v)}
               suffix="USDC"
             />
           </div>
 
-          <div className="mt-2">
+          {/* Risk % */}
+          <div>
             <InputField
-              label="Risk %"
+              label="Risk per trade"
               value={form.riskPercent}
               onChange={(v) => updateField("riskPercent", v)}
               suffix="%"
             />
-            <div className="mt-1 flex flex-wrap gap-1">
-              {RISK_QUICK_VALUES.map((value) => (
+            <div className="mt-2 flex gap-1.5">
+              {RISK_QUICK_VALUES.map((v) => (
                 <button
-                  key={value}
+                  key={v}
                   type="button"
-                  onClick={() => updateField("riskPercent", String(value))}
-                  className="rounded bg-panel px-1.5 py-0.5 text-[10px] text-slate-400 hover:bg-border hover:text-slate-200"
+                  onClick={() => updateField("riskPercent", String(v))}
+                  className={`flex-1 rounded-md py-1 text-[10px] font-semibold transition-colors ${
+                    form.riskPercent === String(v)
+                      ? "bg-accent/20 text-accent"
+                      : "bg-surface2 text-muted hover:text-slate-300"
+                  }`}
                 >
-                  {value}%
+                  {v}%
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            <InputField
-              label="Entry"
-              value={form.entryPrice}
-              onChange={(v) => updateField("entryPrice", v)}
-            />
-            <InputField
-              label="Stop Loss"
-              value={form.stopLossPrice}
-              onChange={(v) => updateField("stopLossPrice", v)}
-            />
-            <InputField
-              label="Take Profit"
-              value={form.takeProfitPrice}
-              onChange={(v) => updateField("takeProfitPrice", v)}
-            />
+          {/* Prices */}
+          <div className="grid grid-cols-3 gap-2">
+            <InputField label="Entry" value={form.entryPrice} onChange={(v) => updateField("entryPrice", v)} />
+            <InputField label="Stop Loss" value={form.stopLossPrice} onChange={(v) => updateField("stopLossPrice", v)} />
+            <InputField label="Take Profit" value={form.takeProfitPrice} onChange={(v) => updateField("takeProfitPrice", v)} />
           </div>
 
-          <div className="mt-2">
+          {/* Leverage */}
+          <div>
             <InputField
               label="Leverage"
               value={form.leverage}
               onChange={(v) => updateField("leverage", v)}
-              suffix="x"
+              suffix="×"
             />
-            <div className="mt-1 flex flex-wrap gap-1">
-              {LEVERAGE_QUICK_VALUES.map((value) => (
+            <div className="mt-2 flex gap-1.5">
+              {LEVERAGE_QUICK_VALUES.map((v) => (
                 <button
-                  key={value}
+                  key={v}
                   type="button"
-                  onClick={() => updateField("leverage", String(value))}
-                  className="rounded bg-panel px-1.5 py-0.5 text-[10px] text-slate-400 hover:bg-border hover:text-slate-200"
+                  onClick={() => updateField("leverage", String(v))}
+                  className={`flex-1 rounded-md py-1 text-[10px] font-semibold transition-colors ${
+                    form.leverage === String(v)
+                      ? "bg-accent/20 text-accent"
+                      : "bg-surface2 text-muted hover:text-slate-300"
+                  }`}
                 >
-                  {value}x
+                  {v}×
                 </button>
               ))}
             </div>
           </div>
-        </section>
+        </div>
 
-        {/* Results */}
-        <section>
-          <h2 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        {/* ── Results ── */}
+        <div>
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted">
             Results
-          </h2>
-          <div className="grid grid-cols-2 gap-1.5">
-            <OutputCard label="Risk Amount" value={formatUSDC(calc.riskAmount)} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <OutputCard label="Risk Amount"     value={formatUSDC(calc.riskAmount)} />
             <OutputCard
               label="Position Size"
-              value={`${formatAssetAmount(calc.positionSize, inputs.asset)}${
-                inputs.asset ? ` ${inputs.asset}` : ""
-              }`}
+              value={`${formatAssetAmount(calc.positionSize, inputs.asset)}${inputs.asset ? ` ${inputs.asset}` : ""}`}
             />
-            <OutputCard label="Required Margin" value={formatUSDC(calc.requiredMargin)} />
-            <OutputCard label="Risk/Reward" value={formatRatio(calc.riskRewardRatio)} tone={rrTone} />
-            <OutputCard label="Stop Distance %" value={formatPercent(calc.stopDistancePercent)} />
+            <OutputCard label="Required Margin"     value={formatUSDC(calc.requiredMargin)} />
+            <OutputCard label="Risk / Reward"   value={formatRatio(calc.riskRewardRatio)} tone={rrTone} />
+            <OutputCard label="Stop Distance"   value={formatPercent(calc.stopDistancePercent)} />
             <OutputCard
               label="Est. Liq. Distance"
               value={formatPercent(calc.approxLiquidationDistancePercent)}
-              tone={liquidationTone}
-              hint="Rough estimate — stop must trigger before this."
+              tone={liqTone}
+              hint="Stop must trigger before this"
             />
           </div>
-        </section>
+        </div>
 
-        {/* Warnings */}
-        <section>
-          <h2 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Warnings
-          </h2>
-          <WarningList warnings={warnings} />
-        </section>
+        {/* ── Warnings ── */}
+        <WarningList warnings={warnings} />
 
-        {/* Actions */}
-        <section>
-          <button
-            type="button"
-            onClick={handleReset}
-            className="w-full rounded border border-border py-1.5 text-xs font-semibold text-slate-500 hover:bg-surface hover:text-slate-300"
-          >
-            Reset
-          </button>
-        </section>
+        {/* ── Actions ── */}
+        <button
+          type="button"
+          onClick={handleReset}
+          className="w-full rounded-lg border border-border py-2 text-xs font-semibold text-muted transition-colors hover:border-accent/30 hover:text-slate-300"
+        >
+          Reset
+        </button>
 
-        <footer className="pb-1 pt-1 text-center text-[10px] text-slate-600">
-          Calculator only — does not place trades, sign transactions, or access private keys.
-        </footer>
+        <p className="pb-1 text-center text-[10px] text-muted">
+          Read-only calculator · does not place trades or access private keys
+        </p>
       </div>
     </div>
   );

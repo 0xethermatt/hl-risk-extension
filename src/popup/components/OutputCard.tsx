@@ -7,19 +7,25 @@ interface OutputCardProps {
   hint?: string;
 }
 
-const TONE_CLASSES: Record<OutputTone, string> = {
+const VALUE_CLASSES: Record<OutputTone, string> = {
   default: "text-slate-100",
-  danger: "text-danger",
-  warn: "text-warn",
-  ok: "text-ok",
+  danger:  "text-danger",
+  warn:    "text-warn",
+  ok:      "text-ok",
 };
 
 export function OutputCard({ label, value, tone = "default", hint }: OutputCardProps) {
   return (
-    <div className="rounded-md border border-border bg-surface px-2.5 py-2">
-      <div className="text-[10px] uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`font-mono text-sm font-semibold ${TONE_CLASSES[tone]}`}>{value}</div>
-      {hint ? <div className="mt-0.5 text-[10px] text-slate-500">{hint}</div> : null}
+    <div className="rounded-lg border border-border bg-surface px-3 py-2.5">
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted">
+        {label}
+      </div>
+      <div className={`font-mono text-sm font-bold leading-none ${VALUE_CLASSES[tone]}`}>
+        {value}
+      </div>
+      {hint ? (
+        <div className="mt-1 text-[10px] leading-tight text-muted">{hint}</div>
+      ) : null}
     </div>
   );
 }
