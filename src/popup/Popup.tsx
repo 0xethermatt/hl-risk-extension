@@ -121,8 +121,6 @@ export function Popup() {
   }
 
   const rrTone = calc.riskRewardRatio <= 0 ? "default" : calc.riskRewardRatio >= 1.5 ? "ok" : "warn";
-  const marginTone =
-    calc.marginUsagePercent > 100 ? "danger" : calc.marginUsagePercent > 50 ? "warn" : "default";
   const liquidationBufferRatio =
     calc.approxLiquidationDistancePercent > 0
       ? calc.stopDistancePercent / calc.approxLiquidationDistancePercent
@@ -287,20 +285,11 @@ export function Popup() {
                 inputs.asset ? ` ${inputs.asset}` : ""
               }`}
             />
-            <OutputCard label="Position Notional" value={formatUSDC(calc.positionNotional)} />
             <OutputCard label="Required Margin" value={formatUSDC(calc.requiredMargin)} />
-            <OutputCard label="Loss at Stop" value={formatUSDC(calc.lossAtStop)} tone="danger" />
-            <OutputCard label="Profit at TP" value={formatUSDC(calc.profitAtTakeProfit)} tone="ok" />
             <OutputCard label="Risk/Reward" value={formatRatio(calc.riskRewardRatio)} tone={rrTone} />
             <OutputCard label="Stop Distance %" value={formatPercent(calc.stopDistancePercent)} />
-            <OutputCard label="TP Distance %" value={formatPercent(calc.takeProfitDistancePercent)} />
             <OutputCard
-              label="Margin Usage %"
-              value={formatPercent(calc.marginUsagePercent)}
-              tone={marginTone}
-            />
-            <OutputCard
-              label="Est. Liquidation Distance"
+              label="Est. Liq. Distance"
               value={formatPercent(calc.approxLiquidationDistancePercent)}
               tone={liquidationTone}
               hint="Rough estimate — stop must trigger before this."
