@@ -1,79 +1,26 @@
 import { calculateTrade } from "../lib/calc";
-import {
-  extractCurrentPairFromHyperliquid,
-  extractTradingViewPositionToolPrices,
-  extractVisibleAccountBalance,
-  extractVisibleLeverage,
-} from "../lib/domExtractors";
-import type {
-  ExtensionMessage,
-  ExtractContextResponse,
-  PingResponse,
-  ToggleOverlayResponse,
-} from "../lib/messageBus";
+import type { ExtensionMessage, PingResponse, ToggleOverlayResponse } from "../lib/messageBus";
 import { getStoredValue, setStoredValue } from "../lib/storage";
-import type { DetectedContext } from "../lib/types";
 import { getAllWarnings } from "../lib/validation";
-import { isOverlayMounted, mountOverlay, unmountOverlay, updateOverlay, type OverlayData } from "./overlay";
+import {
+  isOverlayMounted,
+  mountOverlay,
+  unmountOverlay,
+  updateOverlay,
+  type OverlayData,
+} from "./overlay";
 
 /**
  * Content script for app.hyperliquid.xyz.
  *
- * Strictly read-only: it extracts visible context for the popup/overlay and
- * never writes to page inputs, never dispatches clicks, and never places or
- * modifies orders. See domExtractors.ts for extraction logic.
+ * Strictly read-only display: manages the floating overlay that mirrors the
+ * popup's calculator results. Never writes to page inputs, never dispatches
+ * clicks, and never places or modifies orders.
  */
 
 const HYPERLIQUID_HOSTNAME = "app.hyperliquid.xyz";
-const MUTATION_DEBOUNCE_MS = 800;
-
-function buildDetectedContext(): DetectedContext {
-  const pairCandidates: string[] = [];
-  const leverageCandidates: string[] = [];
-  const balanceCandidates: string[] = [];
-  const tradingViewCandidates: string[] = [];
-
-  const asset = extractCurrentPairFromHyperliquid(document, pairCandidates);
-  const leverage = extractVisibleLeverage(document, leverageCandidates);
-  const accountBalance = extractVisibleAccountBalance(document, balanceCandidates);
-  const tradingView = extractTradingViewPositionToolPrices(document, tradingViewCandidates);
-
-  return {
-    url: window.location.href,
-    asset,
-    leverage,
-    accountBalance,
-    entryPrice: tradingView.entryPrice,
-    stopLossPrice: tradingView.stopLossPrice,
-    takeProfitPrice: tradingView.takeProfitPrice,
-    direction: tradingView.direction,
-    source: "dom",
-    extractedAt: Date.now(),
-    debugCandidates: {
-      pairCandidates,
-      leverageCandidates,
-      balanceCandidates,
-      tradingViewCandidates,
-    },
-  };
-}
 
 function initContentScript(): void {
-  let cachedContext: DetectedContext = buildDetectedContext();
-  let debounceTimer: number | null = null;
-
-  const observer = new MutationObserver(() => {
-    if (debounceTimer !== null) {
-      window.clearTimeout(debounceTimer);
-    }
-    debounceTimer = window.setTimeout(() => {
-      cachedContext = buildDetectedContext();
-      void refreshOverlay();
-    }, MUTATION_DEBOUNCE_MS);
-  });
-
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-
   async function refreshOverlay(forceMount = false): Promise<void> {
     if (!forceMount && !isOverlayMounted()) {
       return;
@@ -83,8 +30,8 @@ function initContentScript(): void {
     const warnings = getAllWarnings(inputs, calc);
 
     const actionableWarnings = warnings.filter(
-      (warning): warning is typeof warning & { level: "error" | "warning" } =>
-        warning.level === "error" || warning.level === "warning",
+      (w): w is typeof w & { level: "error" | "warning" } =>
+        w.level === "error" || w.level === "warning",
     );
 
     const data: OverlayData = {
@@ -106,15 +53,10 @@ function initContentScript(): void {
 
   async function handleMessage(
     message: ExtensionMessage,
-  ): Promise<PingResponse | ExtractContextResponse | ToggleOverlayResponse> {
+  ): Promise<PingResponse | ToggleOverlayResponse | { ok: false; error: string }> {
     switch (message.type) {
       case "PING":
         return { ok: true, url: window.location.href };
-
-      case "EXTRACT_CONTEXT": {
-        cachedContext = buildDetectedContext();
-        return { ok: true, context: cachedContext };
-      }
 
       case "TOGGLE_OVERLAY": {
         await setStoredValue("overlayEnabled", message.enabled);
@@ -139,10 +81,7 @@ function initContentScript(): void {
   });
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== "local") {
-      return;
-    }
-    if (changes["lastInputs"]) {
+    if (areaName === "local" && changes["lastInputs"]) {
       void refreshOverlay();
     }
   });

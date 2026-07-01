@@ -4,10 +4,7 @@ export const DEFAULT_STORAGE: StorageSchema = {
   lastInputs: EMPTY_TRADE_INPUTS,
   riskPercentDefault: 1,
   leverageDefault: 1,
-  walletAddress: "",
   overlayEnabled: false,
-  lastDetectedContext: null,
-  autoFillEnabled: false,
 };
 
 function hasChromeStorage(): boolean {
