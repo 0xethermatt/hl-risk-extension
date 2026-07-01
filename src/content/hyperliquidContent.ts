@@ -82,13 +82,19 @@ function initContentScript(): void {
     const calc = calculateTrade(inputs);
     const warnings = getAllWarnings(inputs, calc);
 
+    const actionableWarnings = warnings.filter(
+      (warning): warning is typeof warning & { level: "error" | "warning" } =>
+        warning.level === "error" || warning.level === "warning",
+    );
+
     const data: OverlayData = {
       asset: inputs.asset || null,
       riskAmount: inputs.accountBalance > 0 && inputs.riskPercent > 0 ? calc.riskAmount : null,
       positionSize: calc.positionSize > 0 ? calc.positionSize : null,
       requiredMargin: calc.requiredMargin > 0 ? calc.requiredMargin : null,
       riskRewardRatio: calc.riskRewardRatio > 0 ? calc.riskRewardRatio : null,
-      warningCount: warnings.filter((warning) => warning.level !== "info").length,
+      warningCount: actionableWarnings.length,
+      warnings: actionableWarnings.map((w) => ({ level: w.level, message: w.message })),
     };
 
     if (isOverlayMounted()) {

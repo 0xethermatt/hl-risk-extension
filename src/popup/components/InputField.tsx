@@ -7,6 +7,7 @@ interface InputFieldProps {
   suffix?: string;
   step?: string;
   id?: string;
+  inputClassName?: string;
 }
 
 export function InputField({
@@ -18,6 +19,7 @@ export function InputField({
   suffix,
   step = "any",
   id,
+  inputClassName,
 }: InputFieldProps) {
   const inputId = id ?? `field-${label.toLowerCase().replace(/\s+/g, "-")}`;
 
@@ -33,7 +35,7 @@ export function InputField({
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className="w-full rounded border border-border bg-surface px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className={`w-full rounded border border-border bg-surface px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent${inputClassName ? ` ${inputClassName}` : ""}`}
         />
         {suffix ? (
           <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-500">

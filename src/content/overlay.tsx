@@ -8,6 +8,11 @@ import { formatAssetAmount, formatRatio, formatUSDC } from "../lib/format";
  * placement — display only.
  */
 
+export interface OverlayWarning {
+  level: "error" | "warning";
+  message: string;
+}
+
 export interface OverlayData {
   asset: string | null;
   riskAmount: number | null;
@@ -15,6 +20,7 @@ export interface OverlayData {
   requiredMargin: number | null;
   riskRewardRatio: number | null;
   warningCount: number;
+  warnings: OverlayWarning[];
 }
 
 const HOST_ID = "hl-risk-tool-overlay-host";
@@ -64,6 +70,19 @@ const OVERLAY_STYLES = `
     color: #facc15;
   }
   .warn-badge.zero { background: #0b2f22; color: #4ade80; }
+  .warn-list {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid #1f2833;
+  }
+  .warn-item {
+    font-size: 10px;
+    padding: 1px 0;
+    line-height: 1.4;
+    overflow-wrap: break-word;
+  }
+  .warn-item.error { color: #f87171; }
+  .warn-item.warning { color: #facc15; }
   .hint {
     margin-top: 6px;
     padding-top: 6px;
@@ -108,6 +127,15 @@ function OverlayPanel({ data }: { data: OverlayData }) {
           {data.riskRewardRatio !== null ? formatRatio(data.riskRewardRatio) : "—"}
         </span>
       </div>
+      {data.warnings.length > 0 && (
+        <div className="warn-list">
+          {data.warnings.map((w, i) => (
+            <div key={i} className={`warn-item ${w.level}`}>
+              {w.message.length > 48 ? w.message.slice(0, 48) + "…" : w.message}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="hint">Open the extension popup for full details.</div>
     </div>
   );

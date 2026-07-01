@@ -373,25 +373,22 @@ export function Popup() {
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
             Wallet (read-only)
           </h2>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <InputField
-                label="Wallet address"
-                type="text"
-                value={walletAddress}
-                onChange={setWalletAddress}
-                placeholder="0x…"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => void handleFetchAccountData()}
-              disabled={apiLoading}
-              className="mt-[18px] h-[30px] shrink-0 rounded bg-accent/20 px-3 text-xs font-semibold text-accent hover:bg-accent/30 disabled:opacity-50"
-            >
-              {apiLoading ? "Fetching…" : "Fetch account data"}
-            </button>
-          </div>
+          <InputField
+            label="Wallet address"
+            type="text"
+            value={walletAddress}
+            onChange={setWalletAddress}
+            placeholder="0x…"
+            inputClassName="font-mono text-xs"
+          />
+          <button
+            type="button"
+            onClick={() => void handleFetchAccountData()}
+            disabled={apiLoading}
+            className="mt-2 w-full rounded bg-accent/20 py-1.5 text-xs font-semibold text-accent hover:bg-accent/30 disabled:opacity-50"
+          >
+            {apiLoading ? "Fetching…" : "Fetch account data"}
+          </button>
 
           {apiError ? <p className="mt-2 text-xs text-danger">{apiError}</p> : null}
 
