@@ -156,24 +156,22 @@ function normalizePairToken(raw: string): string | null {
 }
 
 /**
- * Detects the currently selected trading pair. Checks the document title
- * first (Hyperliquid sets it to something like "BTC-USD | Hyperliquid"),
- * then falls back to scanning visible text near the top of the page for
- * pair-like tokens (BTC/USDC, BTC-USD, BTC-PERP) or bare known symbols.
+ * Detects the currently selected trading pair.
+ *
+ * Prefers scanning visible text near the top of the page for pair-like
+ * tokens (BTC/USDC, BTC-USD, BTC-PERP) or bare known symbols — that's the
+ * actual pair-selector header, so it's the most reliable signal. Falls back
+ * to document.title, then to a bare known-asset symbol anywhere on the
+ * page. Title is intentionally *not* checked first and never returns "high"
+ * confidence: on Hyperliquid it can reflect an unrelated ticker/watchlist
+ * feed (e.g. a starred/first-favorited asset) rather than the pair actually
+ * selected for trading, which previously caused high-confidence
+ * misdetections.
  */
 export function extractCurrentPairFromHyperliquid(
   doc: Document = document,
   debugSink: string[] = [],
 ): DetectedField<string> {
-  const titleMatch = doc.title.toUpperCase().match(PAIR_PATTERN);
-  if (titleMatch) {
-    const symbol = normalizePairToken(titleMatch[0]);
-    if (symbol) {
-      pushCandidate(debugSink, `title:${titleMatch[0]}`);
-      return { value: symbol, raw: titleMatch[0], confidence: "high" };
-    }
-  }
-
   const textCandidates = visibleTextScanner(doc.body, { maxNodes: 3000, maxTextLength: 40 });
   let bestPairMatch: { symbol: string; raw: string; top: number } | null = null;
   let bestKnownMatch: { symbol: string; raw: string; top: number } | null = null;
@@ -212,6 +210,15 @@ export function extractCurrentPairFromHyperliquid(
       raw: bestPairMatch.raw,
       confidence: bestPairMatch.top < 300 ? "high" : "medium",
     };
+  }
+
+  const titleMatch = doc.title.toUpperCase().match(PAIR_PATTERN);
+  if (titleMatch) {
+    const symbol = normalizePairToken(titleMatch[0]);
+    if (symbol) {
+      pushCandidate(debugSink, `title:${titleMatch[0]}`);
+      return { value: symbol, raw: titleMatch[0], confidence: "medium" };
+    }
   }
 
   if (bestKnownMatch) {

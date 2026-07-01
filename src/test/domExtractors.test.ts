@@ -70,18 +70,29 @@ describe("visibleTextScanner", () => {
 });
 
 describe("extractCurrentPairFromHyperliquid", () => {
-  it("detects the pair from document.title with high confidence", () => {
+  it("prefers a pair-pattern token in visible body text over document.title", () => {
     document.title = "BTC-USD | Hyperliquid";
-    const result = extractCurrentPairFromHyperliquid(document);
-    expect(result).toEqual({ value: "BTC", raw: "BTC-USD", confidence: "high" });
-  });
-
-  it("falls back to a pair-pattern token in visible body text", () => {
-    document.title = "Hyperliquid";
     document.body.innerHTML = `<div><span>ETH/USDC</span></div>`;
     const result = extractCurrentPairFromHyperliquid(document);
     expect(result.value).toBe("ETH");
     expect(result.confidence).toBe("high");
+  });
+
+  it("ignores a misleading document.title that reflects an unrelated ticker/watchlist item", () => {
+    // Regression test: Hyperliquid's tab title can mirror a
+    // starred/first-favorited watchlist asset (e.g. BTC-USDC) rather than
+    // the pair actually selected for trading — the real, large pair-selector
+    // header in the DOM must win over that.
+    document.title = "BTC-USDC 60,070 | Hyperliquid";
+    document.body.innerHTML = `<div><span>XYZ100-USDC</span></div>`;
+    const result = extractCurrentPairFromHyperliquid(document);
+    expect(result.value).toBe("XYZ100");
+  });
+
+  it("falls back to document.title (medium confidence) when the DOM scan finds nothing", () => {
+    document.title = "BTC-USD | Hyperliquid";
+    const result = extractCurrentPairFromHyperliquid(document);
+    expect(result).toEqual({ value: "BTC", raw: "BTC-USD", confidence: "medium" });
   });
 
   it("falls back to a bare known-asset symbol with medium confidence", () => {
