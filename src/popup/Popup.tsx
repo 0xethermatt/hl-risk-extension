@@ -118,10 +118,12 @@ function buildCopyText(inputs: TradeInputs, calc: TradeCalculation): string {
     `Stop Distance: ${formatPercent(calc.stopDistancePercent)}`,
     `TP Distance: ${formatPercent(calc.takeProfitDistancePercent)}`,
     `Margin Usage: ${formatPercent(calc.marginUsagePercent)}`,
+    `Est. Liquidation Distance: ${formatPercent(calc.approxLiquidationDistancePercent)}`,
     "",
     "Notes:",
     "Position size is calculated from risk amount and stop distance.",
     "Leverage affects required margin, not planned stop-loss risk.",
+    "With proper sizing, the stop loss should trigger before liquidation — verify stop distance stays inside the liquidation estimate above.",
     "This tool does not place trades.",
   ].join("\n");
 }
@@ -322,6 +324,12 @@ export function Popup() {
   const rrTone = calc.riskRewardRatio <= 0 ? "default" : calc.riskRewardRatio >= 1.5 ? "ok" : "warn";
   const marginTone =
     calc.marginUsagePercent > 100 ? "danger" : calc.marginUsagePercent > 50 ? "warn" : "default";
+  const liquidationBufferRatio =
+    calc.approxLiquidationDistancePercent > 0
+      ? calc.stopDistancePercent / calc.approxLiquidationDistancePercent
+      : 0;
+  const liquidationTone =
+    liquidationBufferRatio >= 1 ? "danger" : liquidationBufferRatio >= 0.8 ? "warn" : "default";
 
   return (
     <div className="min-h-full bg-panel px-3 py-3 text-slate-100">
@@ -547,6 +555,12 @@ export function Popup() {
             <OutputCard label="Stop Distance %" value={formatPercent(calc.stopDistancePercent)} />
             <OutputCard label="TP Distance %" value={formatPercent(calc.takeProfitDistancePercent)} />
             <OutputCard label="Margin Usage %" value={formatPercent(calc.marginUsagePercent)} tone={marginTone} />
+            <OutputCard
+              label="Est. Liquidation Distance"
+              value={formatPercent(calc.approxLiquidationDistancePercent)}
+              tone={liquidationTone}
+              hint="Rough estimate — stop must trigger before this."
+            />
           </div>
         </section>
 

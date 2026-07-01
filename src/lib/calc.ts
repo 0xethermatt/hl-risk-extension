@@ -39,6 +39,14 @@ export function calculateTrade(inputs: TradeInputs): TradeCalculation {
   const takeProfitDistancePercent = safeDivide(takeProfitDistance, entryPrice) * 100;
   const marginUsagePercent = safeDivide(requiredMargin, accountBalance) * 100;
 
+  // Rough, isolated-margin approximation of how far price can move against
+  // the position before margin is exhausted: loss == margin when
+  // distance/entry == 1/leverage, i.e. distancePercent == 100/leverage.
+  // Real liquidation happens a bit *before* this (maintenance margin, cross
+  // margin, funding are not modeled) — this is a directional estimate only,
+  // not an exact liquidation price.
+  const approxLiquidationDistancePercent = safeDivide(100, leverage);
+
   return {
     riskAmount,
     stopDistance,
@@ -52,5 +60,6 @@ export function calculateTrade(inputs: TradeInputs): TradeCalculation {
     stopDistancePercent,
     takeProfitDistancePercent,
     marginUsagePercent,
+    approxLiquidationDistancePercent,
   };
 }

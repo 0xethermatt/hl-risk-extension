@@ -120,4 +120,16 @@ describe("calculateTrade", () => {
     expect(calc.marginUsagePercent).toBe(0);
     expect(Number.isFinite(calc.marginUsagePercent)).toBe(true);
   });
+
+  it("estimates liquidation distance as roughly 100/leverage percent", () => {
+    expect(calculateTrade({ ...baseLong, leverage: 10 }).approxLiquidationDistancePercent).toBeCloseTo(10);
+    expect(calculateTrade({ ...baseLong, leverage: 20 }).approxLiquidationDistancePercent).toBeCloseTo(5);
+    expect(calculateTrade({ ...baseLong, leverage: 50 }).approxLiquidationDistancePercent).toBeCloseTo(2);
+  });
+
+  it("handles zero leverage in the liquidation distance estimate without NaN or Infinity", () => {
+    const calc = calculateTrade({ ...baseLong, leverage: 0 });
+    expect(calc.approxLiquidationDistancePercent).toBe(0);
+    expect(Number.isFinite(calc.approxLiquidationDistancePercent)).toBe(true);
+  });
 });

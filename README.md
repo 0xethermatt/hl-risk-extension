@@ -159,9 +159,16 @@ npm run preview      # Preview the production build
   Position size is derived purely from risk amount and stop distance;
   changing leverage never changes position size, only how much margin that
   position requires.
-- The "liquidation buffer" language in warnings is a caution, not an exact
-  liquidation price calculation — Hyperliquid's actual liquidation price
-  depends on margin mode, maintenance margin tiers, and other open
-  positions that this tool does not model.
+- **The core idea of stop-loss risk management is that you get stopped out,
+  not liquidated** — but that only holds if your stop is actually reachable
+  before liquidation. The tool estimates this with a rough, isolated-margin
+  approximation (`~100/leverage`% move to liquidation) and warns
+  (`stop-near-liquidation`) or errors (`stop-beyond-liquidation`) when your
+  stop distance gets close to or exceeds that estimate. This is **not** an
+  exact liquidation price calculation — Hyperliquid's real liquidation price
+  also depends on margin mode, maintenance margin tiers, funding, and other
+  open positions, none of which this tool models. Treat "Est. Liquidation
+  Distance" as a rough outer bound, not a guarantee, and leave real buffer
+  between your stop and it.
 - **Always verify every value in Hyperliquid's own UI before placing a
   trade.** This tool is an aid, not a source of truth.

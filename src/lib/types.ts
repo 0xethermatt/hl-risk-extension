@@ -35,6 +35,8 @@ export interface TradeCalculation {
   stopDistancePercent: number;
   takeProfitDistancePercent: number;
   marginUsagePercent: number;
+  /** Rough, isolated-margin estimate of %-move-to-liquidation (~100/leverage). Not exact. */
+  approxLiquidationDistancePercent: number;
 }
 
 export type WarningLevel = "error" | "warning" | "info";

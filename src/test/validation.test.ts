@@ -143,6 +143,30 @@ describe("getThresholdWarnings", () => {
     const warnings = getThresholdWarnings(inputs, calculateTrade(inputs));
     expect(hasWarning(warnings, "stop-distance-large")).toBe(true);
   });
+
+  it("errors when the stop is at or beyond the approximate liquidation distance", () => {
+    // leverage=10 -> ~10% liquidation distance; stop is 15% away, so
+    // liquidation would hit before the stop ever could.
+    const inputs: TradeInputs = { ...baseLong, entryPrice: 100, stopLossPrice: 85, leverage: 10 };
+    const warnings = getThresholdWarnings(inputs, calculateTrade(inputs));
+    expect(hasWarning(warnings, "stop-beyond-liquidation")).toBe(true);
+  });
+
+  it("warns when the stop is close to (but not past) the approximate liquidation distance", () => {
+    // leverage=10 -> ~10% liquidation distance; stop is 9% away (ratio 0.9).
+    const inputs: TradeInputs = { ...baseLong, entryPrice: 100, stopLossPrice: 91, leverage: 10 };
+    const warnings = getThresholdWarnings(inputs, calculateTrade(inputs));
+    expect(hasWarning(warnings, "stop-near-liquidation")).toBe(true);
+    expect(hasWarning(warnings, "stop-beyond-liquidation")).toBe(false);
+  });
+
+  it("does not raise a liquidation warning when the stop has ample buffer", () => {
+    // leverage=10 -> ~10% liquidation distance; stop is 5% away (ratio 0.5).
+    const inputs: TradeInputs = { ...baseLong, entryPrice: 100, stopLossPrice: 95, leverage: 10 };
+    const warnings = getThresholdWarnings(inputs, calculateTrade(inputs));
+    expect(hasWarning(warnings, "stop-near-liquidation")).toBe(false);
+    expect(hasWarning(warnings, "stop-beyond-liquidation")).toBe(false);
+  });
 });
 
 describe("getMissingInputWarnings", () => {
@@ -173,7 +197,11 @@ describe("getAllWarnings", () => {
   });
 
   it("returns no warnings for a clean, well-sized long setup", () => {
-    const warnings = getAllWarnings(baseLong, calculateTrade(baseLong));
+    // At baseLong's 10x leverage, ~10% stop distance sits exactly at the
+    // liquidation estimate, so drop to 5x here to leave real buffer — a
+    // "clean" setup must also keep the stop reachable before liquidation.
+    const inputs: TradeInputs = { ...baseLong, leverage: 5 };
+    const warnings = getAllWarnings(inputs, calculateTrade(inputs));
     expect(warnings).toHaveLength(0);
   });
 });

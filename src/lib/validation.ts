@@ -125,6 +125,28 @@ export function getThresholdWarnings(
         message: "Stop distance is over 10% of entry price — this is a wide stop.",
       });
     }
+
+    if (
+      inputs.leverage > 0 &&
+      calc.stopDistance > 0 &&
+      calc.approxLiquidationDistancePercent > 0
+    ) {
+      const liquidationBufferRatio = calc.stopDistancePercent / calc.approxLiquidationDistancePercent;
+
+      if (liquidationBufferRatio >= 1) {
+        warnings.push({
+          id: "stop-beyond-liquidation",
+          level: "error",
+          message: `At ${inputs.leverage}x leverage, the position could be liquidated (~${calc.approxLiquidationDistancePercent.toFixed(2)}% move) before your ${calc.stopDistancePercent.toFixed(2)}% stop loss is ever hit. Proper risk management only works if the stop triggers first — reduce leverage or tighten the stop.`,
+        });
+      } else if (liquidationBufferRatio >= 0.8) {
+        warnings.push({
+          id: "stop-near-liquidation",
+          level: "warning",
+          message: `Stop distance (${calc.stopDistancePercent.toFixed(2)}%) is within 20% of the approximate liquidation distance (~${calc.approxLiquidationDistancePercent.toFixed(2)}% at ${inputs.leverage}x) — thin buffer before liquidation risk overtakes stop-loss risk.`,
+        });
+      }
+    }
   }
 
   if (inputs.accountBalance > 0 && hasEntryAndStop) {
